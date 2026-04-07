@@ -65,7 +65,7 @@ tether_device := class(creative_device):
     OnTetherActivate(Agent : agent) : void =
         if (CurrentRadius >= TetherMinRadius):
             # Player entering tether mode
-            if (Agent not in ActivePlayerSet):
+            if (not (Agent in ActivePlayerSet)):
                 set ActivePlayerSet = ActivePlayerSet + array{Agent}
                 
                 # Store origin position where player activated tether
