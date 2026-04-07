@@ -2,7 +2,6 @@ using { /Fortnite.com/Devices }
 using { /Verse.org/Simulation }
 using { /UnrealEngine.com/Temporary/Diagnostics }
 
-# Mutator classes defined at module scope
 jump_height_modifier := class(creative_mutator):
     MaxJumpHeight: float = 1.0
 
@@ -10,10 +9,6 @@ speed_modifier := class(creative_mutator):
     MovementSpeedMultiplier: float = 1.0
 
 player_stats_device := class(creative_device):
-
-    # ========================================
-    # EDITABLE PROPERTIES - Set in UEFN Editor
-    # ========================================
 
     @editable
     JumpHeightButton: button_device = button_device{}
@@ -27,7 +22,6 @@ player_stats_device := class(creative_device):
     @editable
     ResetButton: button_device = button_device{}
 
-    # Default values
     @editable
     var DefaultJumpHeight: float = 1.0
 
@@ -37,7 +31,6 @@ player_stats_device := class(creative_device):
     @editable
     var DefaultHealth: int = 100
 
-    # Value increments
     @editable
     var JumpHeightIncrement: float = 0.1
 
@@ -47,18 +40,17 @@ player_stats_device := class(creative_device):
     @editable
     var HealthIncrement: int = 10
 
-    # Min/Max bounds
     @editable
     var MinJumpHeight: float = 0.5
 
     @editable
-    var MaxJumpHeight: float = 2.0
+    var MaxJumpHeightLimit: float = 2.0
 
     @editable
     var MinSpeed: float = 0.5
 
     @editable
-    var MaxSpeed: float = 2.0
+    var MaxSpeedLimit: float = 2.0
 
     @editable
     var MinHealth: int = 50
@@ -66,47 +58,28 @@ player_stats_device := class(creative_device):
     @editable
     var MaxHealth: int = 200
 
-    # ========================================
-    # HUD CONFIGURATION
-    # ========================================
-
     @editable
     var HUDEnabled: logic = true
 
     @editable
     var HUDChannel: int = 1
 
-    # ========================================
-    # INTERNAL STATE
-    # ========================================
-
     var CurrentJumpHeight: float = 1.0
     var CurrentSpeed: float = 1.0
     var CurrentHealth: int = 100
 
-    # ========================================
-    # DEVICE INITIALIZATION
-    # ========================================
-
     OnBegin<override>()<suspends> =
-        # Initialize defaults
         set CurrentJumpHeight = DefaultJumpHeight
         set CurrentSpeed = DefaultSpeed
         set CurrentHealth = DefaultHealth
 
-        # Subscribe to button events
         JumpHeightButton.InteractedEvent.Subscribe(OnJumpHeightPressed)
         SpeedButton.InteractedEvent.Subscribe(OnSpeedPressed)
         HealthButton.InteractedEvent.Subscribe(OnHealthPressed)
         ResetButton.InteractedEvent.Subscribe(OnResetPressed)
 
-    # ========================================
-    # BUTTON HANDLERS
-    # ========================================
-
     OnJumpHeightPressed(Agent: agent): void =
-        # Cycle through values
-        if (CurrentJumpHeight >= 2.0):
+        if (CurrentJumpHeight >= MaxJumpHeightLimit):
             set CurrentJumpHeight = MinJumpHeight
         else:
             set CurrentJumpHeight = CurrentJumpHeight + JumpHeightIncrement
@@ -115,8 +88,7 @@ player_stats_device := class(creative_device):
         UpdateHUD(Agent)
 
     OnSpeedPressed(Agent: agent): void =
-        # Cycle through values
-        if (CurrentSpeed >= 2.0):
+        if (CurrentSpeed >= MaxSpeedLimit):
             set CurrentSpeed = MinSpeed
         else:
             set CurrentSpeed = CurrentSpeed + SpeedIncrement
@@ -125,7 +97,6 @@ player_stats_device := class(creative_device):
         UpdateHUD(Agent)
 
     OnHealthPressed(Agent: agent): void =
-        # Cycle through values
         if (CurrentHealth >= MaxHealth):
             set CurrentHealth = MinHealth
         else:
@@ -135,7 +106,6 @@ player_stats_device := class(creative_device):
         UpdateHUD(Agent)
 
     OnResetPressed(Agent: agent): void =
-        # Reset all stats to defaults
         set CurrentJumpHeight = DefaultJumpHeight
         set CurrentSpeed = DefaultSpeed
         set CurrentHealth = DefaultHealth
@@ -144,10 +114,6 @@ player_stats_device := class(creative_device):
         ApplySpeedToAgent(Agent)
         ApplyHealthToAgent(Agent)
         UpdateHUD(Agent)
-
-    # ========================================
-    # HUD FEEDBACK
-    # ========================================
 
     UpdateHUD(Agent: agent): void =
         if (HUDEnabled?):
@@ -162,10 +128,6 @@ player_stats_device := class(creative_device):
 
             if (PlayerCharacter := Agent.GetFortCharacter[]):
                 PlayerCharacter.SendMessageToClient(HUDChannel, FullMessage)
-
-    # ========================================
-    # APPLY FUNCTIONS
-    # ========================================
 
     ApplyJumpHeightToAgent(Agent: agent): void =
         if (FortChar := Agent.GetFortCharacter[]):
