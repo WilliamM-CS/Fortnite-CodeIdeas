@@ -2,6 +2,13 @@ using { /Fortnite.com/Devices }
 using { /Verse.org/Simulation }
 using { /UnrealEngine.com/Temporary/Diagnostics }
 
+# Mutator classes defined at module scope
+jump_height_modifier := class(creative_mutator):
+    MaxJumpHeight: float = 1.0
+
+speed_modifier := class(creative_mutator):
+    MovementSpeedMultiplier: float = 1.0
+
 player_stats_device := class(creative_device):
 
     # ========================================
@@ -98,35 +105,32 @@ player_stats_device := class(creative_device):
     # ========================================
 
     OnJumpHeightPressed(Agent: agent): void =
-        # Toggle through values: 0.5 -> 0.75 -> 1.0 -> 1.25 -> 1.5 -> 1.75 -> 2.0 -> 0.5
+        # Cycle through values
         if (CurrentJumpHeight >= 2.0):
             set CurrentJumpHeight = MinJumpHeight
         else:
             set CurrentJumpHeight = CurrentJumpHeight + JumpHeightIncrement
 
-        # Apply the jump height modification
         ApplyJumpHeightToAgent(Agent)
         UpdateHUD(Agent)
 
     OnSpeedPressed(Agent: agent): void =
-        # Toggle through values: 0.5 -> 0.75 -> 1.0 -> 1.25 -> 1.5 -> 1.75 -> 2.0 -> 0.5
+        # Cycle through values
         if (CurrentSpeed >= 2.0):
             set CurrentSpeed = MinSpeed
         else:
             set CurrentSpeed = CurrentSpeed + SpeedIncrement
 
-        # Apply the speed modification
         ApplySpeedToAgent(Agent)
         UpdateHUD(Agent)
 
     OnHealthPressed(Agent: agent): void =
-        # Cycle: 100 -> 110 -> 120 -> 130 -> 140 -> 150 -> 160 -> 170 -> 180 -> 190 -> 200 -> 50 -> 100
+        # Cycle through values
         if (CurrentHealth >= MaxHealth):
             set CurrentHealth = MinHealth
         else:
             set CurrentHealth = CurrentHealth + HealthIncrement
 
-        # Apply the health modification
         ApplyHealthToAgent(Agent)
         UpdateHUD(Agent)
 
@@ -147,21 +151,15 @@ player_stats_device := class(creative_device):
 
     UpdateHUD(Agent: agent): void =
         if (HUDEnabled?):
-            # Format jump height as percentage
             JumpPercent := CurrentJumpHeight * 100
-            JumpStr := "Jump: {JumpPercent:F0}%"
-
-            # Format speed as percentage
             SpeedPercent := CurrentSpeed * 100
-            SpeedStr := "Speed: {SpeedPercent:F0}%"
 
-            # Format health
+            JumpStr := "Jump: {JumpPercent:F0}%"
+            SpeedStr := "Speed: {SpeedPercent:F0}%"
             HealthStr := "Health: {CurrentHealth}"
 
-            # Build full HUD message
             FullMessage := "{JumpStr} | {SpeedStr} | {HealthStr}"
 
-            # Send to HUD channel for display to player
             if (PlayerCharacter := Agent.GetFortCharacter[]):
                 PlayerCharacter.SendMessageToClient(HUDChannel, FullMessage)
 
@@ -170,27 +168,21 @@ player_stats_device := class(creative_device):
     # ========================================
 
     ApplyJumpHeightToAgent(Agent: agent): void =
-        # Create a fort_jump_height_modification effect
-        JumpMod := modifier{
-            JumpsMaxHeight := CurrentJumpHeight
-        }
-
-        # Apply to the agent
-        if (FortCharacter := Agent.GetFortCharacter[]):
-            FortCharacter.AddMutator(JumpMod)
+        if (FortChar := Agent.GetFortCharacter[]):
+            JumpMutator := jump_height_modifier{
+                MaxJumpHeight := CurrentJumpHeight
+            }
+            FortChar.AddMutator(JumpMutator)
 
     ApplySpeedToAgent(Agent: agent): void =
-        # Create a speed modification
-        SpeedMod := modifier{
-            MovementSpeedMultiplier := CurrentSpeed
-        }
-
-        # Apply to the agent
-        if (FortCharacter := Agent.GetFortCharacter[]):
-            FortCharacter.AddMutator(SpeedMod)
+        if (FortChar := Agent.GetFortCharacter[]):
+            SpeedMutator := speed_modifier{
+                MovementSpeedMultiplier := CurrentSpeed
+            }
+            FortChar.AddMutator(SpeedMutator)
 
     ApplyHealthToAgent(Agent: agent): void =
-        # Set the agent's health directly
-        if (FortCharacter := Agent.GetFortCharacter[]):
-            if (HealthComponent := FortCharacter.GetHealthComponent[]):
+        if (FortChar := Agent.GetFortCharacter[]):
+            if (HealthComponent := FortChar.GetHealthComponent[]):
+                HealthComponent.SetMaxHealth(CurrentHealth)
                 HealthComponent.SetHealth(CurrentHealth)
