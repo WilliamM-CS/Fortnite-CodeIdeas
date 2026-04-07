@@ -8,7 +8,7 @@ A Fortnite Creative device that allows players to dynamically adjust their jump 
 - **Speed Control** - Cycle through movement speed modifiers (0.5x to 2.0x)
 - **Health Control** - Cycle through health values (50 to 200)
 - **Reset Function** - Instantly reset all stats to default values
-- **Visual Feedback Ready** - HUD integration points for showing current values
+- **Visual HUD Feedback** - Shows current stats on screen after each change
 
 ## Setup Instructions
 
@@ -21,13 +21,14 @@ A Fortnite Creative device that allows players to dynamically adjust their jump 
    - Button Device (for speed)
    - Button Device (for health)
    - Button Device (for resetting)
-   - (Optional) HUD Message Device for feedback
+   - (Optional) HUD Message Device for advanced feedback
 
 3. **Configure Editable Properties**:
    - Assign buttons to the `@editable` properties in `player_stats_device.verse`
    - Set default values for starting stats
    - Adjust min/max bounds as needed
    - Configure increment sizes for each stat
+   - Set `HUDEnabled` to true for on-screen feedback
 
 4. **Connect to Map**:
    - Place buttons in your map
@@ -38,6 +39,10 @@ A Fortnite Creative device that allows players to dynamically adjust their jump 
 
 | Property | Type | Default | Description |
 |----------|------|---------|-------------|
+| JumpHeightButton | button_device | - | Button to cycle jump height |
+| SpeedButton | button_device | - | Button to cycle speed |
+| HealthButton | button_device | - | Button to cycle health |
+| ResetButton | button_device | - | Button to reset all stats |
 | DefaultJumpHeight | float | 1.0 | Starting jump height multiplier |
 | DefaultSpeed | float | 1.0 | Starting speed multiplier |
 | DefaultHealth | int | 100 | Starting health value |
@@ -50,6 +55,8 @@ A Fortnite Creative device that allows players to dynamically adjust their jump 
 | MaxSpeed | float | 2.0 | Maximum speed |
 | MinHealth | int | 50 | Minimum health |
 | MaxHealth | int | 200 | Maximum health |
+| HUDEnabled | logic | true | Enable/disable HUD messages |
+| HUDChannel | int | 1 | HUD message channel number |
 
 ## How It Works
 
@@ -57,6 +64,11 @@ A Fortnite Creative device that allows players to dynamically adjust their jump 
 2. Player presses the **Speed Button** → cycles speed by increment
 3. Player presses the **Health Button** → cycles health by increment
 4. Player presses the **Reset Button** → restores all stats to defaults
+
+**HUD Feedback:** After any change, a message appears showing all current stats:
+```
+Jump: 120% | Speed: 150% | Health: 100
+```
 
 Values **cycle** (wrap around):
 - Jump/Speed: `0.5 → 0.6 → ... → 2.0 → 0.5`

@@ -60,6 +60,16 @@ player_stats_device := class(creative_device):
     var MaxHealth: int = 200
 
     # ========================================
+    # HUD CONFIGURATION
+    # ========================================
+
+    @editable
+    var HUDEnabled: logic = true
+
+    @editable
+    var HUDChannel: int = 1
+
+    # ========================================
     # INTERNAL STATE
     # ========================================
 
@@ -96,6 +106,7 @@ player_stats_device := class(creative_device):
 
         # Apply the jump height modification
         ApplyJumpHeightToAgent(Agent)
+        UpdateHUD(Agent)
 
     OnSpeedPressed(Agent: agent): void =
         # Toggle through values: 0.5 -> 0.75 -> 1.0 -> 1.25 -> 1.5 -> 1.75 -> 2.0 -> 0.5
@@ -106,6 +117,7 @@ player_stats_device := class(creative_device):
 
         # Apply the speed modification
         ApplySpeedToAgent(Agent)
+        UpdateHUD(Agent)
 
     OnHealthPressed(Agent: agent): void =
         # Cycle: 100 -> 110 -> 120 -> 130 -> 140 -> 150 -> 160 -> 170 -> 180 -> 190 -> 200 -> 50 -> 100
@@ -116,6 +128,7 @@ player_stats_device := class(creative_device):
 
         # Apply the health modification
         ApplyHealthToAgent(Agent)
+        UpdateHUD(Agent)
 
     OnResetPressed(Agent: agent): void =
         # Reset all stats to defaults
@@ -126,6 +139,31 @@ player_stats_device := class(creative_device):
         ApplyJumpHeightToAgent(Agent)
         ApplySpeedToAgent(Agent)
         ApplyHealthToAgent(Agent)
+        UpdateHUD(Agent)
+
+    # ========================================
+    # HUD FEEDBACK
+    # ========================================
+
+    UpdateHUD(Agent: agent): void =
+        if (HUDEnabled?):
+            # Format jump height as percentage
+            JumpPercent := CurrentJumpHeight * 100
+            JumpStr := "Jump: {JumpPercent:F0}%"
+
+            # Format speed as percentage
+            SpeedPercent := CurrentSpeed * 100
+            SpeedStr := "Speed: {SpeedPercent:F0}%"
+
+            # Format health
+            HealthStr := "Health: {CurrentHealth}"
+
+            # Build full HUD message
+            FullMessage := "{JumpStr} | {SpeedStr} | {HealthStr}"
+
+            # Send to HUD channel for display to player
+            if (PlayerCharacter := Agent.GetFortCharacter[]):
+                PlayerCharacter.SendMessageToClient(HUDChannel, FullMessage)
 
     # ========================================
     # APPLY FUNCTIONS
