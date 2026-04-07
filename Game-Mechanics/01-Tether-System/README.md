@@ -19,6 +19,7 @@ A Fortnite Creative device that restricts player movement to a configurable radi
    - Button Device (for activation)
    - Button Device (for increasing radius)
    - Button Device (for decreasing radius)
+   - **Button Device (for deactivation) ← NEW!**
    - Movement Modulator Device
    - HUD Message Device
 
@@ -40,13 +41,30 @@ A Fortnite Creative device that restricts player movement to a configurable radi
 | TetherMaxRadius | float | 10.0 | Maximum allowed radius |
 | RadiusIncreaseInterval | float | 1.0 | Feet to add/subtract per button press |
 
+## Functions
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `IsPlayerInBounds(InAgent)` | logic | Checks if player is within their tether radius from origin |
+| `GetPlayerOrigin(InAgent)` | ?vector3 | Returns the origin position where tether was activated |
+| `GetPlayerRadius(InAgent)` | float | Returns the current radius for a player |
+| `ResetTether(InAgent)` | void | Deactivates and clears tether for a player |
+
 ## How It Works
 
 1. Player clicks the activation button
-2. Tether activates with current radius setting
+2. Tether activates with current radius setting (stores origin position)
 3. Movement modulator restricts player speed based on radius
 4. Players can use +/- buttons to adjust tether size
-5. HUD shows current tether status
+5. Players can use deactivate button to turn off tether
+6. HUD shows current tether status
+
+## New Features (Fixed)
+
+- ✅ **Deactivation Button** — Players can now turn off tether mode
+- ✅ **Origin Position Tracking** — `GetPlayerOrigin()` returns where tether was activated
+- ✅ **Proper Bounds Checking** — `IsPlayerInBounds()` calculates distance from origin in XY plane
+- ✅ **Array Removal Fixed** — Using proper Verse syntax (no `.Remove()` method)
 
 ## Future Enhancements
 

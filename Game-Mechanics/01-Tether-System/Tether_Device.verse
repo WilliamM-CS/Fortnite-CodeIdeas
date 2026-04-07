@@ -33,6 +33,9 @@ tether_device := class(creative_device):
     DecreaseButton : button_device = button_device{}
 
     @editable
+    DeactivateButton : button_device = button_device{}
+
+    @editable
     MovementModulator : movement_modulator_device = movement_modulator_device{}
 
     @editable
@@ -41,6 +44,7 @@ tether_device := class(creative_device):
     # ===== Internal Variables =====
     var ActivePlayerSet : []agent = array{}
     var PlayerRadii : [agent]float = map{}
+    var OriginPositions : [agent]vector3 = map{}
     var CurrentRadius : float = 4.0
 
     # ===== Initialization =====
@@ -49,6 +53,7 @@ tether_device := class(creative_device):
         ActivateButton.InteractedEvent.Subscribe(OnTetherActivate)
         IncreaseButton.InteractedEvent.Subscribe(OnIncreaseRadius)
         DecreaseButton.InteractedEvent.Subscribe(OnDecreaseRadius)
+        DeactivateButton.InteractedEvent.Subscribe(OnTetherDeactivate)
 
         # Initialize movement modulator settings
         MovementModulator.SetSpeedMultiplier(1.0)
@@ -62,6 +67,10 @@ tether_device := class(creative_device):
             # Player entering tether mode
             if (Agent not in ActivePlayerSet):
                 set ActivePlayerSet = ActivePlayerSet + array{Agent}
+                
+                # Store origin position where player activated tether
+                if (FortniteCharacter := Agent.GetFortniteCharacter[]):
+                    set OriginPositions = OriginPositions->[Agent] = FortniteCharacter.GetTransform().Translation
             
             # Set player's individual radius
             set PlayerRadii = PlayerRadii->[Agent] = CurrentRadius
@@ -100,6 +109,25 @@ tether_device := class(creative_device):
             ShowTetherStatus(Agent, CurrentRadius, true)
             Print("Tether radius decreased to: {CurrentRadius} feet")
 
+    OnTetherDeactivate(Agent : agent) : void =
+        # Remove player from active set
+        if (Agent in ActivePlayerSet):
+            # Filter out the agent from the array (correct Verse syntax)
+            NewSet : []agent = array{}
+            for (A : ActivePlayerSet):
+                if (A <> Agent):
+                    set NewSet = NewSet + array{A}
+            set ActivePlayerSet = NewSet
+            
+            # Remove from maps
+            set PlayerRadii = RemoveFromMap(PlayerRadii, Agent)
+            set OriginPositions = RemoveFromMap(OriginPositions, Agent)
+            
+            # Restore full speed
+            MovementModulator.ModifySpeed(Agent, 1.0)
+            ShowTetherStatus(Agent, 0.0, false)
+            Print("Tether deactivated for player")
+
     # ===== Core Functions =====
 
     ApplyTetherRestriction(InAgent : agent, RadiusFeet : float) : void =
@@ -122,6 +150,14 @@ tether_device := class(creative_device):
 
     # ===== Utility Functions =====
 
+    # Helper function to remove from agent-keyed map
+    RemoveFromMap<K, V>(Map : [agent]V, Key : agent)<transacts> : [agent]V =
+        NewMap : [agent]V = map{}
+        for (K->V : Map):
+            if (K <> Key):
+                set NewMap = NewMap->[K] = V
+        return NewMap
+
     # Get player's current tether status
     GetPlayerRadius(InAgent : agent)<transacts> : float =
         if (RadiusOpt := PlayerRadii[InAgent]):
@@ -130,16 +166,36 @@ tether_device := class(creative_device):
             return TetherRadiusFeet
 
     # Check if player is within their tether bounds
-    IsPlayerInBounds(InAgent : agent, CurrentPos : vector3, OriginPos : vector3)<transacts> : logic =
+    IsPlayerInBounds(InAgent : agent)<transacts> : logic =
         if (RadiusOpt := PlayerRadii[InAgent]):
-            Distance := |CurrentPos - OriginPos|
-            TetherUnits := RadiusOpt * 0.3048  # Convert feet to units
-            return Distance <= TetherUnits
+            if (OriginOpt := OriginPositions[InAgent]):
+                if (FortniteCharacter := InAgent.GetFortniteCharacter[]):
+                    CurrentPos := FortniteCharacter.GetTransform().Translation
+                    Distance := DistanceXY(CurrentPos, OriginOpt)
+                    TetherUnits := RadiusOpt * 0.3048  # Convert feet to meters (Unreal units)
+                    return Distance <= TetherUnits
         return true
+
+    # Calculate distance in XY plane (ignoring height)
+    DistanceXY(A : vector3, B : vector3) : float =
+        DX := A.X - B.X
+        DY := A.Y - B.Y
+        return Sqrt(DX * DX + DY * DY)
+
+    # Get player's origin position
+    GetPlayerOrigin(InAgent : agent)<transacts> : ?vector3 =
+        return OriginPositions[InAgent]
 
     # Reset tether for a player
     ResetTether(InAgent : agent) : void =
         if (InAgent in ActivePlayerSet):
-            set ActivePlayerSet = ActivePlayerSet.Remove(InAgent)
-            set PlayerRadii = PlayerRadii->[InAgent] = TetherRadiusFeet
+            # Filter out the agent from the array
+            NewSet : []agent = array{}
+            for (A : ActivePlayerSet):
+                if (A <> InAgent):
+                    set NewSet = NewSet + array{A}
+            set ActivePlayerSet = NewSet
+            
+            set PlayerRadii = RemoveFromMap(PlayerRadii, InAgent)
+            set OriginPositions = RemoveFromMap(OriginPositions, InAgent)
             MovementModulator.ModifySpeed(InAgent, 1.0)
